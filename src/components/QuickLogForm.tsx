@@ -1,129 +1,255 @@
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useToast } from "@/hooks/use-toast";
+import { useSwimSessionsContext } from "@/contexts/SwimSessionsContext";
+import { SwimSessionFormData } from "@/types/swim";
 import { Check } from "lucide-react";
 
-const DISTANCE_PRESETS = [
-  { value: "500", label: "500m" },
-  { value: "1000", label: "1000m" },
-  { value: "1500", label: "1500m" },
-  { value: "2000", label: "2000m" },
-  { value: "2500", label: "2500m" },
-];
+// Helper function to parse time string to seconds
+const parseTimeToSeconds = (timeStr: string): number => {
+  const parts = timeStr.split(':').map(part => parseInt(part, 10));
+  
+  if (parts.length === 2) {
+    // MM:SS format
+    const [minutes, seconds] = parts;
+    return minutes * 60 + seconds;
+  } else if (parts.length === 3) {
+    // HH:MM:SS format
+    const [hours, minutes, seconds] = parts;
+    return hours * 3600 + minutes * 60 + seconds;
+  }
+  
+  return 0;
+};
 
-interface QuickLogFormProps {
-  onSubmit: (data: { distance: number; duration: number; notes?: string; date: string }) => void;
-  lastDistance?: string;
-  lastDuration?: number;
-}
+// Helper function to format seconds to time string
+const formatSecondsToTime = (totalSeconds: number): string => {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  }
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+};
 
-export const QuickLogForm = ({ onSubmit, lastDistance = "1500", lastDuration = 30 }: QuickLogFormProps) => {
-  const [distance, setDistance] = useState(lastDistance);
-  const [duration, setDuration] = useState(lastDuration.toString());
-  const [notes, setNotes] = useState("");
+// Validation function for time format
+const validateTimeFormat = (value: string): boolean | string => {
+  const timeRegex = /^(?:(?:([0-9]+):)?([0-5]?[0-9]):)?([0-5]?[0-9])$/;
+  
+  if (!value) return "Duration is required";
+  
+  // Check if it matches MM:SS or HH:MM:SS format
+  if (!timeRegex.test(value)) {
+    return "Please enter time in MM:SS or HH:MM:SS format";
+  }
+  
+  const parts = value.split(':');
+  
+  if (parts.length === 2) {
+    const [minutes, seconds] = parts.map(p => parseInt(p, 10));
+    if (seconds >= 60) return "Seconds must be less than 60";
+    if (minutes < 0 || seconds < 0) return "Time values must be positive";
+  } else if (parts.length === 3) {
+    const [hours, minutes, seconds] = parts.map(p => parseInt(p, 10));
+    if (minutes >= 60) return "Minutes must be less than 60";
+    if (seconds >= 60) return "Seconds must be less than 60";
+    if (hours < 0 || minutes < 0 || seconds < 0) return "Time values must be positive";
+  }
+  
+  return true;
+};
+
+export const QuickLogForm = () => {
   const [isSuccess, setIsSuccess] = useState(false);
+  const { toast } = useToast();
+  const { saveSession } = useSwimSessionsContext();
+  
+  const form = useForm<SwimSessionFormData>({
+    defaultValues: {
+      distance: undefined,
+      duration: "",
+      notes: "",
+    },
+  });
 
-  const calculatePace = () => {
-    const dist = parseInt(distance);
-    const dur = parseInt(duration);
-    if (dist && dur) {
-      const pacePerHundred = (dur / (dist / 100)).toFixed(2);
-      const minutes = Math.floor(Number(pacePerHundred));
-      const seconds = Math.round((Number(pacePerHundred) - minutes) * 60);
-      return `${minutes}:${seconds.toString().padStart(2, '0')}/100m`;
+  const calculatePace = (distance: number, durationStr: string): number => {
+    const durationSeconds = parseTimeToSeconds(durationStr);
+    if (distance && durationSeconds) {
+      // Calculate seconds per 100m
+      return (durationSeconds / (distance / 100));
+    }
+    return 0;
+  };
+
+  const formatPace = (paceSeconds: number): string => {
+    if (paceSeconds === 0) return "--:--/100m";
+    
+    const minutes = Math.floor(paceSeconds / 60);
+    const seconds = Math.round(paceSeconds % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}/100m`;
+  };
+
+  const onSubmit = (data: SwimSessionFormData) => {
+    const durationSeconds = parseTimeToSeconds(data.duration);
+    const pace = calculatePace(data.distance, data.duration);
+    
+    const result = saveSession({
+      distance: data.distance,
+      duration: durationSeconds,
+      pace: pace,
+      date: new Date().toISOString(),
+      notes: data.notes || undefined,
+    });
+
+    if (result.success) {
+      setIsSuccess(true);
+      toast({
+        title: "Swim session logged!",
+        description: `${data.distance}m in ${data.duration} (${formatPace(pace)})`,
+      });
+      
+      // Reset form after successful submission
+      form.reset({
+        distance: undefined,
+        duration: "",
+        notes: "",
+      });
+      
+      setTimeout(() => setIsSuccess(false), 2000);
+    } else {
+      toast({
+        title: "Error saving session",
+        description: "Please try again",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const watchDistance = form.watch("distance");
+  const watchDuration = form.watch("duration");
+  
+  // Calculate pace in real-time for display
+  const currentPace = (() => {
+    const distance = watchDistance;
+    const duration = watchDuration;
+    
+    if (distance && duration && validateTimeFormat(duration) === true) {
+      const pace = calculatePace(distance, duration);
+      return formatPace(pace);
     }
     return "--:--/100m";
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit({
-      distance: parseInt(distance),
-      duration: parseInt(duration),
-      notes: notes || undefined,
-      date: new Date().toISOString(),
-    });
-    
-    setIsSuccess(true);
-    setNotes("");
-    setTimeout(() => setIsSuccess(false), 2000);
-  };
+  })();
 
   return (
-    <form onSubmit={handleSubmit} className="bg-card rounded-lg p-6 shadow-sm border border-border">
-      <h2 className="text-2xl font-semibold mb-4">Log Today's Swim</h2>
-      
-      <div className="space-y-4">
-        <div>
-          <Label htmlFor="distance" className="text-sm font-medium mb-1.5 block">
-            Distance
-          </Label>
-          <Select value={distance} onValueChange={setDistance}>
-            <SelectTrigger id="distance" className="h-11">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {DISTANCE_PRESETS.map((preset) => (
-                <SelectItem key={preset.value} value={preset.value}>
-                  {preset.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div>
-          <Label htmlFor="duration" className="text-sm font-medium mb-1.5 block">
-            Time (minutes)
-          </Label>
-          <Input
-            id="duration"
-            type="number"
-            value={duration}
-            onChange={(e) => setDuration(e.target.value)}
-            min="1"
-            className="h-11"
-            required
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="notes" className="text-sm font-medium mb-1.5 block">
-            Notes (optional)
-          </Label>
-          <Input
-            id="notes"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="How did it feel?"
-            className="h-9"
-          />
-        </div>
-
-        <div className="pt-2">
-          <Button
-            type="submit"
-            className={`w-full h-13 text-base font-semibold transition-all ${
-              isSuccess ? "bg-secondary hover:bg-secondary" : ""
-            }`}
-          >
-            {isSuccess ? (
-              <span className="flex items-center gap-2 animate-scale-success">
-                <Check className="w-5 h-5" />
-                Logged!
-              </span>
-            ) : (
-              "Log Swim →"
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="bg-card rounded-lg p-6 shadow-sm border border-border">
+        <h2 className="text-2xl font-semibold mb-4">Log Today's Swim</h2>
+        
+        <div className="space-y-4">
+          <FormField
+            control={form.control}
+            name="distance"
+            rules={{
+              required: "Distance is required",
+              min: {
+                value: 1,
+                message: "Distance must be positive"
+              },
+              validate: (value) => {
+                if (!value || value <= 0) return "Distance must be a positive number";
+                if (!Number.isInteger(value)) return "Distance must be a whole number";
+                return true;
+              }
+            }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Distance (meters)</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    placeholder="e.g., 1500"
+                    {...field}
+                    onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                    min="1"
+                    step="1"
+                    className="h-11"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
             )}
-          </Button>
-        </div>
+          />
 
-        <div className="text-sm text-muted-foreground text-center pt-1">
-          Pace: {calculatePace()}
+          <FormField
+            control={form.control}
+            name="duration"
+            rules={{
+              required: "Duration is required",
+              validate: validateTimeFormat,
+            }}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Duration</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="MM:SS or HH:MM:SS"
+                    {...field}
+                    className="h-11"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="notes"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Notes (optional)</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="How did it feel?"
+                    {...field}
+                    className="h-9"
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <div className="pt-2">
+            <Button
+              type="submit"
+              className={`w-full h-13 text-base font-semibold transition-all ${
+                isSuccess ? "bg-green-600 hover:bg-green-600" : ""
+              }`}
+              disabled={form.formState.isSubmitting}
+            >
+              {isSuccess ? (
+                <span className="flex items-center gap-2">
+                  <Check className="w-5 h-5" />
+                  Logged!
+                </span>
+              ) : (
+                "Log Swim →"
+              )}
+            </Button>
+          </div>
+
+          <div className="text-sm text-muted-foreground text-center pt-1">
+            Pace: {currentPace}
+          </div>
         </div>
-      </div>
-    </form>
+      </form>
+    </Form>
   );
 };

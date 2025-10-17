@@ -1,0 +1,22 @@
+# Defang configuration for SwimDash MVP static site deployment
+name: swimdash-mvp
+
+services:
+  web:
+    # Build from local Dockerfile
+    build:
+      context: .
+      dockerfile: Dockerfile
+    
+    # Expose port 80 for HTTP traffic
+    ports:
+      - mode: ingress
+        target: 80
+        protocol: http
+    
+    # Health check to ensure the service is running
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

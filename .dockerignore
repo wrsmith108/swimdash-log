@@ -1,0 +1,42 @@
+# Node modules and dependencies
+node_modules/
+.npm/
+
+# Source files (we only need dist)
+src/
+public/
+
+# Development files
+*.md
+*.log
+*.lock
+package-lock.json
+bun.lockb
+
+# Configuration files
+.git/
+.gitignore
+.roo/
+.roomodes
+eslint.config.js
+postcss.config.js
+tailwind.config.ts
+tsconfig*.json
+vite.config.ts
+components.json
+
+# IDE files
+.vscode/
+.idea/
+
+# Build artifacts (except dist)
+coverage/
+.cache/
+.parcel-cache/
+
+# Environment files
+.env*
+
+# Documentation
+docs/
+README.md
