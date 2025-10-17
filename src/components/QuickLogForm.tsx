@@ -53,7 +53,7 @@ export const QuickLogForm = ({ onSubmit, lastDistance = "1500", lastDuration = 3
 
   return (
     <form onSubmit={handleSubmit} className="bg-card rounded-lg p-6 shadow-sm border border-border">
-      <h2 className="text-lg font-semibold mb-4">Log Today's Swim</h2>
+      <h2 className="text-2xl font-semibold mb-4">Log Today's Swim</h2>
       
       <div className="space-y-4">
         <div>

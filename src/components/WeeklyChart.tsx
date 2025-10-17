@@ -43,7 +43,7 @@ export const WeeklyChart = ({ sessions, goalDistance }: WeeklyChartProps) => {
 
   return (
     <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
-      <h2 className="text-lg font-semibold mb-4">Weekly Progress</h2>
+      <h2 className="text-2xl font-semibold mb-4">Weekly Progress</h2>
       <ResponsiveContainer width="100%" height={250}>
         <LineChart data={chartData}>
           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />

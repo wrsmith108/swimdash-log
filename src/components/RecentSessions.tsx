@@ -27,7 +27,7 @@ export const RecentSessions = ({ sessions }: RecentSessionsProps) => {
   if (sortedSessions.length === 0) {
     return (
       <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
-        <h2 className="text-lg font-semibold mb-4">Recent Sessions</h2>
+        <h2 className="text-2xl font-semibold mb-4">Recent Sessions</h2>
         <div className="text-center py-8 text-muted-foreground">
           <p className="text-sm">No swims logged yet</p>
           <p className="text-xs mt-1">Your sessions will appear here</p>
@@ -38,7 +38,7 @@ export const RecentSessions = ({ sessions }: RecentSessionsProps) => {
 
   return (
     <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
-      <h2 className="text-lg font-semibold mb-4">Recent Sessions</h2>
+      <h2 className="text-2xl font-semibold mb-4">Recent Sessions</h2>
       
       <div className="space-y-3">
         {sortedSessions.map((session) => (

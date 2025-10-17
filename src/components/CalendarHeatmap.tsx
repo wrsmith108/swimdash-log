@@ -48,7 +48,7 @@ export const CalendarHeatmap = ({ sessions }: CalendarHeatmapProps) => {
 
   return (
     <div className="bg-card rounded-lg p-6 shadow-sm border border-border">
-      <h2 className="text-lg font-semibold mb-4">Monthly Calendar</h2>
+      <h2 className="text-2xl font-semibold mb-4">Monthly Calendar</h2>
       
       <TooltipProvider>
         <div className="space-y-2">
