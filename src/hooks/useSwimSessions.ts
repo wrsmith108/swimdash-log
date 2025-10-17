@@ -2,6 +2,25 @@ import { useState, useEffect } from 'react';
 import { SwimSession } from '@/types/swim';
 
 const STORAGE_KEY = 'swimSessions';
+const MAX_SESSIONS_WARNING = 500; // Warn user before hitting quota
+
+// Helper to estimate storage size in bytes
+const getStorageSize = (): number => {
+  let total = 0;
+  for (const key in localStorage) {
+    if (localStorage.hasOwnProperty(key)) {
+      total += localStorage[key].length + key.length;
+    }
+  }
+  return total;
+};
+
+// Helper to check if storage is approaching limit (4MB threshold out of typical 5-10MB)
+const isStorageNearLimit = (): boolean => {
+  const sizeInBytes = getStorageSize();
+  const sizeInMB = sizeInBytes / (1024 * 1024);
+  return sizeInMB > 4;
+};
 
 export const useSwimSessions = () => {
   const [sessions, setSessions] = useState<SwimSession[]>([]);
@@ -33,10 +52,30 @@ export const useSwimSessions = () => {
     const updatedSessions = [newSession, ...sessions];
 
     try {
+      // Check if approaching storage limit
+      if (isStorageNearLimit()) {
+        console.warn('Storage approaching limit. Consider exporting old data.');
+      }
+
+      // Check if too many sessions
+      if (updatedSessions.length > MAX_SESSIONS_WARNING) {
+        console.warn(`You have ${updatedSessions.length} sessions. Consider exporting and archiving old data.`);
+      }
+
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedSessions));
       setSessions(updatedSessions);
       return { success: true, session: newSession };
     } catch (error) {
+      // Handle quota exceeded error specifically
+      if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+        console.error('Storage quota exceeded. Please export and delete old sessions.');
+        return {
+          success: false,
+          error: 'Storage limit reached. Please export and delete old sessions to continue.',
+          errorType: 'QUOTA_EXCEEDED' as const
+        };
+      }
+
       console.error('Error saving swim session to localStorage:', error);
       return { success: false, error };
     }
@@ -96,6 +135,29 @@ export const useSwimSessions = () => {
     };
   };
 
+  // Import sessions (merge or replace)
+  const importSessions = (importedSessions: SwimSession[], mode: 'merge' | 'replace') => {
+    try {
+      let updatedSessions: SwimSession[];
+
+      if (mode === 'replace') {
+        updatedSessions = importedSessions;
+      } else {
+        // Merge: deduplicate by ID
+        const existingIds = new Set(sessions.map(s => s.id));
+        const newSessions = importedSessions.filter(s => !existingIds.has(s.id));
+        updatedSessions = [...sessions, ...newSessions];
+      }
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedSessions));
+      setSessions(updatedSessions);
+      return { success: true };
+    } catch (error) {
+      console.error('Error importing sessions:', error);
+      return { success: false, error };
+    }
+  };
+
   return {
     sessions,
     saveSession,
@@ -103,5 +165,6 @@ export const useSwimSessions = () => {
     getRecentSessions,
     getSessionsByDateRange,
     getStatistics,
+    importSessions,
   };
 };

@@ -1,5 +1,6 @@
 import { QuickLogForm } from "@/components/QuickLogForm";
 import { RecentSessions } from "@/components/RecentSessions";
+import { DataManagement } from "@/components/DataManagement";
 import { SwimSessionsProvider } from "@/contexts/SwimSessionsContext";
 import { Waves } from "lucide-react";
 
@@ -25,9 +26,10 @@ const Index = () => {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-6xl mx-auto">
-          {/* Left Column - Quick Log Form */}
-          <div className="w-full">
+          {/* Left Column - Quick Log Form & Data Management */}
+          <div className="w-full space-y-6">
             <QuickLogForm />
+            <DataManagement />
           </div>
 
           {/* Right Column - Recent Sessions */}

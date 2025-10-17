@@ -4,7 +4,7 @@ import { SwimSession } from '@/types/swim';
 
 interface SwimSessionsContextType {
   sessions: SwimSession[];
-  saveSession: (session: Omit<SwimSession, 'id'>) => { success: boolean; session?: SwimSession; error?: any };
+  saveSession: (session: Omit<SwimSession, 'id'>) => { success: boolean; session?: SwimSession; error?: any; errorType?: string };
   deleteSession: (id: string) => { success: boolean; error?: any };
   getRecentSessions: (count?: number) => SwimSession[];
   getSessionsByDateRange: (startDate: Date, endDate: Date) => SwimSession[];
@@ -16,6 +16,7 @@ interface SwimSessionsContextType {
     averageDistance: number;
     averageDuration: number;
   };
+  importSessions: (sessions: SwimSession[], mode: 'merge' | 'replace') => { success: boolean; error?: any };
 }
 
 const SwimSessionsContext = createContext<SwimSessionsContextType | undefined>(undefined);

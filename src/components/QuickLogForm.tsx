@@ -40,28 +40,46 @@ const formatSecondsToTime = (totalSeconds: number): string => {
 
 // Validation function for time format
 const validateTimeFormat = (value: string): boolean | string => {
-  const timeRegex = /^(?:(?:([0-9]+):)?([0-5]?[0-9]):)?([0-5]?[0-9])$/;
-  
   if (!value) return "Duration is required";
-  
-  // Check if it matches MM:SS or HH:MM:SS format
+
+  // Check basic format (MM:SS or HH:MM:SS)
+  const timeRegex = /^(?:(\d+):)?([0-5]?[0-9]):([0-5]?[0-9])$/;
+
   if (!timeRegex.test(value)) {
-    return "Please enter time in MM:SS or HH:MM:SS format";
+    return "Please enter time in MM:SS or HH:MM:SS format (e.g., 25:30 or 1:05:45)";
   }
-  
-  const parts = value.split(':');
-  
+
+  const parts = value.split(':').map(p => parseInt(p, 10));
+
+  // Validate based on format
   if (parts.length === 2) {
-    const [minutes, seconds] = parts.map(p => parseInt(p, 10));
+    // MM:SS format
+    const [minutes, seconds] = parts;
+
     if (seconds >= 60) return "Seconds must be less than 60";
     if (minutes < 0 || seconds < 0) return "Time values must be positive";
+    if (isNaN(minutes) || isNaN(seconds)) return "Invalid time format";
+
+    // Check for reasonable duration (not 00:00, not more than 10 hours)
+    const totalSeconds = minutes * 60 + seconds;
+    if (totalSeconds === 0) return "Duration must be greater than 0";
+    if (totalSeconds > 36000) return "Duration seems too long (max 10 hours)";
+
   } else if (parts.length === 3) {
-    const [hours, minutes, seconds] = parts.map(p => parseInt(p, 10));
+    // HH:MM:SS format
+    const [hours, minutes, seconds] = parts;
+
     if (minutes >= 60) return "Minutes must be less than 60";
     if (seconds >= 60) return "Seconds must be less than 60";
     if (hours < 0 || minutes < 0 || seconds < 0) return "Time values must be positive";
+    if (isNaN(hours) || isNaN(minutes) || isNaN(seconds)) return "Invalid time format";
+
+    // Check for reasonable duration
+    const totalSeconds = hours * 3600 + minutes * 60 + seconds;
+    if (totalSeconds === 0) return "Duration must be greater than 0";
+    if (totalSeconds > 36000) return "Duration seems too long (max 10 hours)";
   }
-  
+
   return true;
 };
 
@@ -113,21 +131,31 @@ export const QuickLogForm = () => {
         title: "Swim session logged!",
         description: `${data.distance}m in ${data.duration} (${formatPace(pace)})`,
       });
-      
+
       // Reset form after successful submission
       form.reset({
         distance: undefined,
         duration: "",
         notes: "",
       });
-      
+
       setTimeout(() => setIsSuccess(false), 2000);
     } else {
-      toast({
-        title: "Error saving session",
-        description: "Please try again",
-        variant: "destructive",
-      });
+      // Handle quota exceeded specifically
+      if (result.errorType === 'QUOTA_EXCEEDED') {
+        toast({
+          title: "Storage limit reached",
+          description: "Please export and delete old sessions to continue logging new swims.",
+          variant: "destructive",
+          duration: 10000, // Show longer for important error
+        });
+      } else {
+        toast({
+          title: "Error saving session",
+          description: "Please try again",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -198,11 +226,14 @@ export const QuickLogForm = () => {
                 <FormLabel>Duration</FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="MM:SS or HH:MM:SS"
+                    placeholder="MM:SS or HH:MM:SS (e.g., 25:30)"
                     {...field}
                     className="h-11"
                   />
                 </FormControl>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Examples: 25:30 (25min 30sec) or 1:05:45 (1hr 5min 45sec)
+                </p>
                 <FormMessage />
               </FormItem>
             )}
