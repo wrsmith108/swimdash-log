@@ -1,73 +1,104 @@
-# Welcome to your Lovable project
+# SwimDash
 
-## Project info
+A lightweight swimming session logger and progress tracker for weekly swimmers. Log your swims in under 10 seconds and visualize your progress with charts and calendar heatmaps.
 
-**URL**: https://lovable.dev/projects/08172e52-1252-404b-b510-f92dd7b51c67
+## Features
 
-## How can I edit this code?
+- ⚡ Quick session logging (distance, time, notes)
+- 📊 Weekly progress charts
+- 🗓️ Calendar heatmap visualization
+- 💾 Local storage (no backend required)
+- 📱 Responsive design
+- 🔒 Privacy-focused (data stays on your device)
 
-There are several ways of editing your application.
+## Tech Stack
 
-**Use Lovable**
+- **Framework:** React 18.3 with TypeScript
+- **Build Tool:** Vite 7.1
+- **UI Components:** shadcn-ui + Radix UI
+- **Styling:** Tailwind CSS
+- **Charts:** Recharts
+- **Forms:** React Hook Form + Zod
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/08172e52-1252-404b-b510-f92dd7b51c67) and start prompting.
+## Local Development
 
-Changes made via Lovable will be committed automatically to this repo.
+### Prerequisites
+- Node.js 18+ and npm (install with [nvm](https://github.com/nvm-sh/nvm#installing-and-updating))
 
-**Use your preferred IDE**
+### Setup
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
+```bash
+# Clone the repository
 git clone <YOUR_GIT_URL>
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Navigate to project directory
+cd swimdash-log
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Install dependencies
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The application will be available at `http://localhost:8080`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Available Scripts
 
-**Use GitHub Codespaces**
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Deployment
 
-## What technologies are used for this project?
+Build the project:
+```bash
+npm run build
+```
 
-This project is built with:
+Deploy the `dist/` directory to any static hosting service:
+- Vercel
+- Netlify
+- GitHub Pages
+- Cloudflare Pages
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### Docker Deployment
 
-## How can I deploy this project?
+```bash
+# Build the app
+npm run build
 
-Simply open [Lovable](https://lovable.dev/projects/08172e52-1252-404b-b510-f92dd7b51c67) and click on Share -> Publish.
+# Build Docker image
+docker build -t swimdash .
 
-## Can I connect a custom domain to my Lovable project?
+# Run container
+docker run -p 80:80 swimdash
+```
 
-Yes, you can!
+## Project Structure
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+```
+swimdash-log/
+├── src/
+│   ├── components/       # React components
+│   │   ├── QuickLogForm.tsx
+│   │   ├── RecentSessions.tsx
+│   │   ├── WeeklyChart.tsx
+│   │   ├── CalendarHeatmap.tsx
+│   │   └── ui/          # shadcn-ui components
+│   ├── hooks/           # Custom React hooks
+│   ├── contexts/        # React Context providers
+│   ├── types/           # TypeScript types
+│   └── lib/             # Utility functions
+├── public/              # Static assets
+└── dist/                # Production build (generated)
+```
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

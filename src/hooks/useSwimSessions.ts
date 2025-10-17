@@ -11,10 +11,8 @@ export const useSwimSessions = () => {
     const loadSessions = () => {
       try {
         const stored = localStorage.getItem(STORAGE_KEY);
-        console.log('Loading sessions from localStorage:', stored);
         if (stored) {
           const parsedSessions = JSON.parse(stored) as SwimSession[];
-          console.log('Parsed sessions:', parsedSessions);
           setSessions(parsedSessions);
         }
       } catch (error) {
@@ -33,10 +31,9 @@ export const useSwimSessions = () => {
     };
 
     const updatedSessions = [newSession, ...sessions];
-    
+
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedSessions));
-      console.log('Saved sessions to localStorage:', updatedSessions);
       setSessions(updatedSessions);
       return { success: true, session: newSession };
     } catch (error) {
